@@ -14,10 +14,20 @@ nvcc -G -g -O0 -std=c++11 --compile --relocatable-device-code=false -gencode arc
 
 ## Execution
 ### 1. Input parameters
-kkk
+1. inputFile (Character string): Absolute path of the input dataset file.
+2. cMnr (integer number): Minimum number of rows allowed to build a final bicluster.
+2. cMnc (integer number): Minimum number of columns allowed to build a final bicluster.
+3. output (Value 1 or 0):
+  * Value 1 = Shows the number of biclusters and final biclusters.
+  * Value 0 = It shows only the number of biclusters generated.
+4. deviceCount (integer number): Number of GPU devices you want to use.
 
 ### 2. Execute
-kkk
+./BiBit [inputFile] [cMnr] [cMnc] [output] [deviceCount]
+
+```
+./BiBit "/home/MyUser/Samples/Dataset.csv" 3 3 0 2
+```
 
 ## Authors
 * [Aurelio Lopez-Fernandez](mailto:alopfer1@upo.es) - [DATAi Research Group (Pablo de Olavide University)](http://www.upo.es/investigacion/datai)
