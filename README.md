@@ -5,7 +5,12 @@ Graphichs Processing Units technology (GPU) and CUDA architecture are one of the
 In this work, a GPU version of one of the fastest biclustering solutions, BiBit, is presented. This implementation, named gBiBit, has been designed to take full advantage of the computational resources offered by GPU devices. Either using a single GPU device or in its multi-GPU mode, gBiBit is the only binary biclustering algorithm that is able to process large datasets. The experimental results have shown that gBiBit improves the computational performance of BiBit and an early GPU version, called CUBiBit.
 
 ## Compilation
-qweqw
+Go to gBiBit folder and executes the following commands to compile:
+```
+nvcc -G -g -O0 -std=c++11 -gencode arch=compute_61,code=sm_61  -odir "src" -M -o "src/BiBit.d" "src/BiBit.cu"
+nvcc -G -g -O0 -std=c++11 --compile --relocatable-device-code=false -gencode arch=compute_61,code=compute_61 -gencode arch=compute_61,code=sm_61  -x cu -o  "src/BiBit.o" "src/BiBit.cu"
+```
+
 
 ## Execution
 ### 1. Input parameters
