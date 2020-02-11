@@ -26,7 +26,7 @@ nvcc -G -g -O0 -std=c++11 --compile --relocatable-device-code=false -gencode arc
 _./BiBit [inputFile] [cMnr] [cMnc] [output] [deviceCount]_
 
 ```
-./BiBit "/home/MyUser/Samples/Dataset.csv" 3 3 0 2
+./BiBit /home/MyUser/Samples/Dataset.csv 3 3 0 2
 ```
 
 ## Authors
