@@ -92,8 +92,10 @@ ulong maxBlocksPerGrid;
 ulong maxIteratorGPU;
 ulong lastBlocksGrid;
 long long totales;
+
 std::unordered_set<std::vector<uint64_t>> setPatterns64;
 std::unordered_set<std::vector<uint32_t>> setPatterns32;
+
 uint64_t *aResultColsCpu;
 long long *aPatFilteredCpu;
 
