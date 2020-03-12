@@ -614,7 +614,9 @@ unsigned long long int printResults(ofstream &myfile, int id,
 	cudaMemcpy(aResultCpu, aResult, patternsPerRun * cRows * sizeof(uint8_t),
 			cudaMemcpyDeviceToHost);
 
-	for (ulong r = 0; r < cpuNumPatFiltered; r++) {
+	for (ulong r = 0;
+			r < cpuNumPatFiltered;
+			r++) {
 		long long pattern = *(patFiltered + r);
 		iTotalRows = 0;
 		line = "";
@@ -628,18 +630,22 @@ unsigned long long int printResults(ofstream &myfile, int id,
 		line = line + ";";
 
 		if (iTotalRows >= cMnr) {
-			ulong firstOne = 0, contBit = 0, realPos;
-			for (ulong c = 0; c < cCols; c++) {
-				uint64_t colsReduce = *(aResultColsCpu + pattern * cCols + c);
+			ulong contBit = 0, realPos;
+			for (int col = cCols - 1; col >= 0; col--) {
+				uint64_t colsReduce = *(aResultColsCpu + pattern * cCols + col);
 				string s = decimalToBinary64(colsReduce);
-				firstOne = (cColsTotal - s.length() - (patternSize * c)) + 1;
-				for (char& ch : s) {
-					if (ch == '1') {
-						realPos = firstOne + contBit;
-						line = line + to_string(realPos) + ",";
-					}
-					contBit++;
+				if (s == "") {
+					s = "0";
 				}
+				int numOnes = 0;
+				for (int posS = 0; posS < s.length(); posS++) {
+					if (s.at(posS) == '1') {
+						realPos = contBit + s.length() - posS;
+						line = line + to_string(realPos) + ",";
+						numOnes++;
+					}
+				}
+				contBit += s.length();
 			}
 			line.pop_back();
 			myfile << line << "\n";
@@ -676,18 +682,22 @@ unsigned long long int printResults(ofstream &myfile, int id,
 		line = line + ";";
 
 		if (iTotalRows >= cMnr) {
-			ulong firstOne = 0, contBit = 0, realPos;
-			for (ulong c = 0; c < cCols; c++) {
-				uint64_t colsReduce = *(aResultColsCpu + pattern * cCols + c);
+			ulong contBit = 0, realPos;
+			for (int col = cCols - 1; col >= 0; col--) {
+				uint32_t colsReduce = *(aResultColsCpu + pattern * cCols + col);
 				string s = decimalToBinary32(colsReduce);
-				firstOne = (cColsTotal - s.length() - (patternSize * c)) + 1;
-				for (char& ch : s) {
-					if (ch == '1') {
-						realPos = firstOne + contBit;
-						line = line + to_string(realPos) + ",";
-					}
-					contBit++;
+				if (s == "") {
+					s = "0";
 				}
+				int numOnes = 0;
+				for (int posS = 0; posS < s.length(); posS++) {
+					if (s.at(posS) == '1') {
+						realPos = contBit + s.length() - posS;
+						line = line + to_string(realPos) + ",";
+						numOnes++;
+					}
+				}
+				contBit += s.length();
 			}
 			line.pop_back();
 			myfile << line << "\n";
@@ -707,12 +717,11 @@ void threadsPerDevice_64(int id, cudaStream_t s, ulong chunks,
 	ofstream myfile;
 
 	if (output == 1) {
-		myfile.open("results_GPU" + to_string(id) + ".txt");
-		myfile << "Rows;Cols" << "\n";
+		myfile.open("results_GPU_" + to_string(id) + ".csv");
 	}
 
-	for (ulong largeScale = 0; largeScale < chunks; largeScale++) {
-
+	for (ulong largeScale = 0; largeScale < chunks;
+			largeScale++) {
 		uint64_t *aResultCols = getArrayResult64(id, patternsPerRun, cCols);
 		long long *patFiltered = getPatternsFiltered(id, patternsPerRun);
 
@@ -737,31 +746,29 @@ void threadsPerDevice_64(int id, cudaStream_t s, ulong chunks,
 				cudaMemcpyDeviceToHost);
 
 		// 2) Remove duplicate patterns
-			std::pair<std::set<vector<uint64_t>>::iterator, bool> ret;
-			for (long long int i = 0; i < cpuNumPatFiltered; i++) {
-				long long pat = *(aPatFilteredCpu + i);
-				uint64_t *ptr = &aResultColsCpu[pat * cCols];
-				vector<uint64_t> vec(ptr, ptr + cCols);
-				vector<uint64_t> vec2 = vec;
-				m->lock();
-				if (setPatterns64.insert(vec2).second == false) {
-					*(aPatFilteredCpu + i) = *(aPatFilteredCpu
-							+ cpuNumPatFiltered - 1);
-					*(aPatFilteredCpu + cpuNumPatFiltered - 1) = -1;
-					cpuNumPatFiltered--;
-					i--;
-				}
-				m->unlock();
+		std::pair<std::set<vector<uint64_t>>::iterator, bool> ret;
+		for (long long int i = 0; i < cpuNumPatFiltered; i++) {
+			long long pat = *(aPatFilteredCpu + i);
+			uint64_t *ptr = &aResultColsCpu[pat * cCols];
+			vector<uint64_t> vec(ptr, ptr + cCols);
+			vector<uint64_t> vec2 = vec;
+			m->lock();
+			if (setPatterns64.insert(vec2).second == false) {
+				*(aPatFilteredCpu + i) = *(aPatFilteredCpu + cpuNumPatFiltered
+						- 1);
+				*(aPatFilteredCpu + cpuNumPatFiltered - 1) = -1;
+				cpuNumPatFiltered--;
+				i--;
 			}
+			m->unlock();
+		}
 
-			cudaFree(patFiltered);
-			cudaMalloc((void **) &patFiltered,
-					patternsPerRun * sizeof(long long));
-			cudaMemcpy(patFiltered, aPatFilteredCpu,
-					patternsPerRun * sizeof(long long), cudaMemcpyHostToDevice);
-			cudaMemcpyToSymbol(numPatFiltered, &cpuNumPatFiltered,
-					sizeof(unsigned long long int), 0, cudaMemcpyHostToDevice);
-
+		cudaFree(patFiltered);
+		cudaMalloc((void **) &patFiltered, patternsPerRun * sizeof(long long));
+		cudaMemcpy(patFiltered, aPatFilteredCpu,
+				patternsPerRun * sizeof(long long), cudaMemcpyHostToDevice);
+		cudaMemcpyToSymbol(numPatFiltered, &cpuNumPatFiltered,
+				sizeof(unsigned long long int), 0, cudaMemcpyHostToDevice);
 
 		// 3)  Generate biclusters
 		uint8_t *aResult;
@@ -826,8 +833,7 @@ void threadsPerDevice_32(int id, cudaStream_t s, ulong chunks,
 	ofstream myfile;
 
 	if (output == 1) {
-		myfile.open("results_GPU" + to_string(id) + ".txt");
-		myfile << "Rows;Cols" << "\n";
+		myfile.open("results_GPU" + to_string(id) + ".csv");
 	}
 
 	for (ulong largeScale = 0; largeScale < chunks; largeScale++) {
@@ -846,41 +852,39 @@ void threadsPerDevice_32(int id, cudaStream_t s, ulong chunks,
 				sizeof(unsigned long long int), 0, cudaMemcpyDeviceToHost);
 
 		// 2) Remove duplicate patterns
-			uint32_t *aResultColsCpu = (uint32_t *) malloc(
-					patternsPerRun * cCols * sizeof(uint32_t));
-			cudaMemcpy(aResultColsCpu, aResultCols,
-					patternsPerRun * cCols * sizeof(uint32_t),
-					cudaMemcpyDeviceToHost);
-			long long *aPatFilteredCpu = (long long *) malloc(
-					patternsPerRun * sizeof(long long));
-			cudaMemcpy(aPatFilteredCpu, patFiltered,
-					patternsPerRun * sizeof(long long), cudaMemcpyDeviceToHost);
+		uint32_t *aResultColsCpu = (uint32_t *) malloc(
+				patternsPerRun * cCols * sizeof(uint32_t));
+		cudaMemcpy(aResultColsCpu, aResultCols,
+				patternsPerRun * cCols * sizeof(uint32_t),
+				cudaMemcpyDeviceToHost);
+		long long *aPatFilteredCpu = (long long *) malloc(
+				patternsPerRun * sizeof(long long));
+		cudaMemcpy(aPatFilteredCpu, patFiltered,
+				patternsPerRun * sizeof(long long), cudaMemcpyDeviceToHost);
 
-			std::pair<std::set<vector<uint32_t>>::iterator, bool> ret;
-			for (uint32_t i = 0; i < cpuNumPatFiltered; i++) {
-				long long pat = *(aPatFilteredCpu + i);
-				uint32_t *ptr = &aResultColsCpu[pat * cCols];
-				vector<uint32_t> vec(ptr, ptr + cCols);
-				vector<uint32_t> vec2 = vec;
-				m->lock();
-				if (setPatterns32.insert(vec2).second == false) {
-					*(aPatFilteredCpu + i) = *(aPatFilteredCpu
-							+ cpuNumPatFiltered - 1);
-					*(aPatFilteredCpu + cpuNumPatFiltered - 1) = -1;
-					cpuNumPatFiltered--;
-					i--;
-				}
-				m->unlock();
+		std::pair<std::set<vector<uint32_t>>::iterator, bool> ret;
+		for (uint32_t i = 0; i < cpuNumPatFiltered; i++) {
+			long long pat = *(aPatFilteredCpu + i);
+			uint32_t *ptr = &aResultColsCpu[pat * cCols];
+			vector<uint32_t> vec(ptr, ptr + cCols);
+			vector<uint32_t> vec2 = vec;
+			m->lock();
+			if (setPatterns32.insert(vec2).second == false) {
+				*(aPatFilteredCpu + i) = *(aPatFilteredCpu + cpuNumPatFiltered
+						- 1);
+				*(aPatFilteredCpu + cpuNumPatFiltered - 1) = -1;
+				cpuNumPatFiltered--;
+				i--;
 			}
+			m->unlock();
+		}
 
-			cudaFree(patFiltered);
-			cudaMalloc((void **) &patFiltered,
-					patternsPerRun * sizeof(long long));
-			cudaMemcpy(patFiltered, aPatFilteredCpu,
-					patternsPerRun * sizeof(long long), cudaMemcpyHostToDevice);
-			cudaMemcpyToSymbol(numPatFiltered, &cpuNumPatFiltered,
-					sizeof(unsigned long long int), 0, cudaMemcpyHostToDevice);
-
+		cudaFree(patFiltered);
+		cudaMalloc((void **) &patFiltered, patternsPerRun * sizeof(long long));
+		cudaMemcpy(patFiltered, aPatFilteredCpu,
+				patternsPerRun * sizeof(long long), cudaMemcpyHostToDevice);
+		cudaMemcpyToSymbol(numPatFiltered, &cpuNumPatFiltered,
+				sizeof(unsigned long long int), 0, cudaMemcpyHostToDevice);
 
 		// 3)  Generate biclusters
 		uint8_t *aResult;
@@ -941,6 +945,7 @@ void runAlgorithm_64() {
 	// 1) Create inputData (Matrix)
 	totales = 0;
 	uint64_t *mArray = fileReader64();
+
 	getNumPatterns();
 
 	// 2) PREPARING LARGE-SCALE DATA: CHUNKS
@@ -1079,6 +1084,8 @@ int main(int argc, char** argv) {
 	printf("Pattern size: %lu\n", patternSize);
 	printf("MNC value: %lu\n", cMnc);
 	printf("MNR value: %lu\n", cMnr);
+
+
 	printf("\nResults:\n========================\n");
 	cout << "Biclusters: " << totales << endl;
 
