@@ -640,7 +640,7 @@ unsigned long long int printResults(ofstream &myfile, int id,
 				int numOnes = 0;
 				for (int posS = 0; posS < s.length(); posS++) {
 					if (s.at(posS) == '1') {
-						realPos = contBit + s.length() - posS;
+						realPos = cColsTotal - (contBit + s.length() - posS) + 1;
 						line = line + to_string(realPos) + ",";
 						numOnes++;
 					}
@@ -692,7 +692,7 @@ unsigned long long int printResults(ofstream &myfile, int id,
 				int numOnes = 0;
 				for (int posS = 0; posS < s.length(); posS++) {
 					if (s.at(posS) == '1') {
-						realPos = contBit + s.length() - posS;
+						realPos = cColsTotal - (contBit + s.length() - posS) + 1;
 						line = line + to_string(realPos) + ",";
 						numOnes++;
 					}
