@@ -10,6 +10,7 @@ Go to gBiBit folder and executes the following commands to compile:
 ```
 nvcc -G -g -O0 -std=c++11 -gencode arch=compute_61,code=sm_61  -odir "src" -M -o "src/BiBit.d" "src/BiBit.cu"
 nvcc -G -g -O0 -std=c++11 --compile --relocatable-device-code=false -gencode arch=compute_61,code=compute_61 -gencode arch=compute_61,code=sm_61  -x cu -o  "src/BiBit.o" "src/BiBit.cu"
+nvcc --cudart static --relocatable-device-code=false -gencode arch=compute_61,code=compute_61 -link -o "gBiBit" ./src/BiBit.o
 ```
 
 
@@ -27,7 +28,7 @@ nvcc -G -g -O0 -std=c++11 --compile --relocatable-device-code=false -gencode arc
 _./BiBit [inputFile] [cMnr] [cMnc] [output] [deviceCount]_
 
 ```
-./BiBit /home/MyUser/Samples/Dataset.csv 3 3 0 2
+./gBiBit /home/MyUser/Samples/Dataset.csv 3 3 0 2
 ```
 
 ## Authors
